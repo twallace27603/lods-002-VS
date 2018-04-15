@@ -96,3 +96,4 @@ D:\lods\002-SQLMigrate\002-VSProjects\002WebApp\obj\Release\002WebApp.csproj.Cor
 D:\lods\002-SQLMigrate\002-VSProjects\002WebApp\obj\Release\002WebApp.csproj.CopyComplete
 D:\lods\002-SQLMigrate\002-VSProjects\002WebApp\obj\Release\002WebApp.dll
 D:\lods\002-SQLMigrate\002-VSProjects\002WebApp\obj\Release\002WebApp.pdb
+D:\lods\002-SQLMigrate\002-VSProjects\002WebApp\obj\Release\002WebApp.csprojResolveAssemblyReference.cache
