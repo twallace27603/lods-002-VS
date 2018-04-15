@@ -17,13 +17,7 @@
       "type": "string",
       "defaultValue": "2016-Datacenter-smalldisk"
     },
-    "appServer-PIPDnsName": {
-      "type": "string",
-      "minLength": 1
-    },
-    "webAppName": {
-      "type": "string"
-    }
+    "instanceID": { "type": "string" }
   },
   "variables": {
     "VNETName": "OnPrem-VNET",
@@ -48,10 +42,8 @@
     "appServerVnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('VNETName'))]",
     "appServerSubnetRef": "[concat(variables('appServerVnetID'), '/subnets/', variables('VNETSubnet1Name'))]",
     "appServerNicName": "[concat(variables('appServerName'), 'NetworkInterface')]",
-    "AppServerInstallArchiveFolder": "DSC",
-    "AppServerInstallArchiveFileName": "AppServerInstall.zip",
     "appServer-PIPName": "[concat(variables('appServerName'),'-PIP')]",
-    "webAppName": "[parameters('webAppName')]",
+    "webAppName": "[concat('mig',parameters('instanceID'))]",
     "appServicePlanName": "002lods",
     "appServicePlanSkuName": "S1"
 
@@ -259,10 +251,7 @@
           "displayName": "appServer-PIP"
         },
         "properties": {
-          "publicIPAllocationMethod": "Dynamic",
-          "dnsSettings": {
-            "domainNameLabel": "[parameters('appServer-PIPDnsName')]"
-          }
+          "publicIPAllocationMethod": "Dynamic"
         }
       },
       {
