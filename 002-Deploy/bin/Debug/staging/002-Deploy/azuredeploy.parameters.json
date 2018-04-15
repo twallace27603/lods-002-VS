@@ -11,6 +11,9 @@
     },
     "appServer-PIPDnsName": {
       "value": "tswlods002"
+    },
+    "webAppName": {
+      "value": "tswlods002"
     }
   }
 }

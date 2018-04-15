@@ -15,23 +15,14 @@
     },
     "appServerWindowsOSVersion": {
       "type": "string",
-      "defaultValue": "2016-Datacenter"
-    },
-    "_artifactsLocation": {
-      "type": "string",
-      "metadata": {
-        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
-      }
-    },
-    "_artifactsLocationSasToken": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Auto-generated token to access _artifactsLocation"
-      }
+      "defaultValue": "2016-Datacenter-smalldisk"
     },
     "appServer-PIPDnsName": {
       "type": "string",
       "minLength": 1
+    },
+    "webAppName": {
+      "type": "string"
     }
   },
   "variables": {
@@ -39,11 +30,11 @@
     "VNETPrefix": "10.0.0.0/16",
     "VNETSubnet1Name": "webApp",
     "VNETSubnet1Prefix": "10.0.0.0/24",
-     "dbServerName": "dbServer",
+    "dbServerName": "dbServer",
     "dbServerImagePublisher": "Canonical",
     "dbServerImageOffer": "UbuntuServer",
     "dbServerOSDiskName": "dbServerOSDisk",
-    "dbServerVmSize": "Standard_D2_v2",
+    "dbServerVmSize": "Standard_D2_v3",
     "dbServerVnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('VNETName'))]",
     "dbServerSubnetRef": "[concat(variables('dbServerVnetID'), '/subnets/', variables('VNETSubnet1Name'))]",
     "dbServerNicName": "[concat(variables('dbServerName'), '-NIC')]",
@@ -53,255 +44,260 @@
     "appServerImagePublisher": "MicrosoftWindowsServer",
     "appServerImageOffer": "WindowsServer",
     "appServerOSDiskName": "appServerOSDisk",
-    "appServerVmSize": "Standard_D2_v2",
+    "appServerVmSize": "Standard_D4_V3",
     "appServerVnetID": "[resourceId('Microsoft.Network/virtualNetworks', variables('VNETName'))]",
     "appServerSubnetRef": "[concat(variables('appServerVnetID'), '/subnets/', variables('VNETSubnet1Name'))]",
     "appServerNicName": "[concat(variables('appServerName'), 'NetworkInterface')]",
     "AppServerInstallArchiveFolder": "DSC",
     "AppServerInstallArchiveFileName": "AppServerInstall.zip",
-    "appServer-PIPName": "[concat(variables('appServerName'),'-PIP')]"
+    "appServer-PIPName": "[concat(variables('appServerName'),'-PIP')]",
+    "webAppName": "[parameters('webAppName')]",
+    "appServicePlanName": "002lods",
+    "appServicePlanSkuName": "S1"
 
   },
-  "resources": [
-    {
-      "name": "[variables('VNETName')]",
-      "type": "Microsoft.Network/virtualNetworks",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2016-03-30",
-      "dependsOn": [],
-      "tags": {
-        "displayName": "VNET"
-      },
-      "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "[variables('VNETPrefix')]"
-          ]
+    "resources": [
+      {
+        "name": "[variables('VNETName')]",
+        "type": "Microsoft.Network/virtualNetworks",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2016-03-30",
+        "dependsOn": [],
+        "tags": {
+          "displayName": "VNET"
         },
-        "subnets": [
-          {
-            "name": "[variables('VNETSubnet1Name')]",
-            "properties": {
-              "addressPrefix": "[variables('VNETSubnet1Prefix')]"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "[variables('dbServerNicName')]",
-      "type": "Microsoft.Network/networkInterfaces",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2016-03-30",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('VNETName'))]"
-      ],
-      "tags": {
-        "displayName": "dbServerNic"
-      },
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipconfig1",
-            "properties": {
-              "privateIPAllocationMethod": "Dynamic",
-              "subnet": {
-                "id": "[variables('dbServerSubnetRef')]"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "[variables('dbServerName')]",
-      "type": "Microsoft.Compute/virtualMachines",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2017-03-30",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', variables('dbServerNicName'))]"
-      ],
-      "tags": {
-        "displayName": "dbServer"
-      },
-      "properties": {
-        "hardwareProfile": {
-          "vmSize": "[variables('dbServerVmSize')]"
-        },
-        "osProfile": {
-          "computerName": "[variables('dbServerName')]",
-          "adminUsername": "[parameters('AdminUsername')]",
-          "adminPassword": "[parameters('AdminPassword')]"
-        },
-        "storageProfile": {
-          "imageReference": {
-            "publisher": "[variables('dbServerImagePublisher')]",
-            "offer": "[variables('dbServerImageOffer')]",
-            "sku": "[parameters('dbServerUbuntuOSVersion')]",
-            "version": "latest"
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": [
+              "[variables('VNETPrefix')]"
+            ]
           },
-          "osDisk": {
-            "caching": "ReadWrite",
-            "createOption": "FromImage"
-          }
-        },
-        "networkProfile": {
-          "networkInterfaces": [
+          "subnets": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('dbServerNicName'))]"
+              "name": "[variables('VNETSubnet1Name')]",
+              "properties": {
+                "addressPrefix": "[variables('VNETSubnet1Prefix')]"
+              }
             }
           ]
         }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('dbServerName'),'/', variables('dbServerExtensionName'))]",
-      "apiVersion": "2015-06-15",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('dbServerName'))]"
-      ],
-      "properties": {
-        "publisher": "Microsoft.Azure.Extensions",
-        "type": "DockerExtension",
-        "typeHandlerVersion": "1.0",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "docker": {
-            "port": "2375"
-          },
-          "compose": {
-            "rancheragent": {
-              "image": "twallace27603/sqldemo:latest",
-              "restart": "always",
-              "ports": [
-                "1433:1433"
-              ]
-            }
-          }
-        }
-      }
-    },
-
-    {
-      "name": "[variables('appServerNicName')]",
-      "type": "Microsoft.Network/networkInterfaces",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2016-03-30",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('VNETName'))]",
-        "[resourceId('Microsoft.Network/publicIPAddresses', variables('appServer-PIPName'))]"
-      ],
-      "tags": {
-        "displayName": "appServerNic"
       },
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipconfig1",
-            "properties": {
-              "privateIPAllocationMethod": "Dynamic",
-              "subnet": {
-                "id": "[variables('appServerSubnetRef')]"
-              },
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('appServer-PIPName'))]"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "[variables('appServerName')]",
-      "type": "Microsoft.Compute/virtualMachines",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2017-03-30",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces', variables('appServerNicName'))]"
-      ],
-      "tags": {
-        "displayName": "appServer"
-      },
-      "properties": {
-        "hardwareProfile": {
-          "vmSize": "[variables('appServerVmSize')]"
+      {
+        "name": "[variables('dbServerNicName')]",
+        "type": "Microsoft.Network/networkInterfaces",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2016-03-30",
+        "dependsOn": [
+          "[resourceId('Microsoft.Network/virtualNetworks', variables('VNETName'))]"
+        ],
+        "tags": {
+          "displayName": "dbServerNic"
         },
-        "osProfile": {
-          "computerName": "[variables('appServerName')]",
-          "adminUsername": "[parameters('AdminUsername')]",
-          "adminPassword": "[parameters('AdminPassword')]"
-        },
-        "storageProfile": {
-          "imageReference": {
-            "publisher": "[variables('appServerImagePublisher')]",
-            "offer": "[variables('appServerImageOffer')]",
-            "sku": "[parameters('appServerWindowsOSVersion')]",
-            "version": "latest"
-          },
-          "osDisk": {
-             "caching": "ReadWrite",
-            "createOption": "FromImage"
-          }
-        },
-        "networkProfile": {
-          "networkInterfaces": [
+        "properties": {
+          "ipConfigurations": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('appServerNicName'))]"
+              "name": "ipconfig1",
+              "properties": {
+                "privateIPAllocationMethod": "Dynamic",
+                "subnet": {
+                  "id": "[variables('dbServerSubnetRef')]"
+                }
+              }
             }
           ]
         }
       },
-      "resources": [
-        {
-          "name": "Microsoft.Powershell.DSC",
-          "type": "extensions",
-          "location": "[resourceGroup().location]",
-          "apiVersion": "2016-03-30",
-          "dependsOn": [
-            "[resourceId('Microsoft.Compute/virtualMachines', variables('appServerName'))]"
-          ],
-          "tags": {
-            "displayName": "AppServerInstall"
+      {
+        "name": "[variables('dbServerName')]",
+        "type": "Microsoft.Compute/virtualMachines",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2017-03-30",
+        "dependsOn": [
+          "[resourceId('Microsoft.Network/networkInterfaces', variables('dbServerNicName'))]"
+        ],
+        "tags": {
+          "displayName": "dbServer"
+        },
+        "properties": {
+          "hardwareProfile": {
+            "vmSize": "[variables('dbServerVmSize')]"
           },
-          "properties": {
-            "publisher": "Microsoft.Powershell",
-            "type": "DSC",
-            "typeHandlerVersion": "2.9",
-            "autoUpgradeMinorVersion": true,
-            "settings": {
-              "configuration": {
-                "url": "[concat(parameters('_artifactsLocation'), '/', variables('AppServerInstallArchiveFolder'), '/', variables('AppServerInstallArchiveFileName'))]",
-                "script": "AppServerInstall.ps1",
-                "function": "Main"
-              },
-              "configurationArguments": {
-                "nodeName": "[variables('appServerName')]"
-              }
+          "osProfile": {
+            "computerName": "[variables('dbServerName')]",
+            "adminUsername": "[parameters('AdminUsername')]",
+            "adminPassword": "[parameters('AdminPassword')]"
+          },
+          "storageProfile": {
+            "imageReference": {
+              "publisher": "[variables('dbServerImagePublisher')]",
+              "offer": "[variables('dbServerImageOffer')]",
+              "sku": "[parameters('dbServerUbuntuOSVersion')]",
+              "version": "latest"
             },
-            "protectedSettings": {
-              "configurationUrlSasToken": "[parameters('_artifactsLocationSasToken')]"
+            "osDisk": {
+              "caching": "ReadWrite",
+              "createOption": "FromImage"
+            }
+          },
+          "networkProfile": {
+            "networkInterfaces": [
+              {
+                "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('dbServerNicName'))]"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "Microsoft.Compute/virtualMachines/extensions",
+        "name": "[concat(variables('dbServerName'),'/', variables('dbServerExtensionName'))]",
+        "apiVersion": "2015-06-15",
+        "location": "[resourceGroup().location]",
+        "dependsOn": [
+          "[concat('Microsoft.Compute/virtualMachines/', variables('dbServerName'))]"
+        ],
+        "properties": {
+          "publisher": "Microsoft.Azure.Extensions",
+          "type": "DockerExtension",
+          "typeHandlerVersion": "1.0",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+            "docker": {
+              "port": "2375"
+            },
+            "compose": {
+              "rancheragent": {
+                "image": "twallace27603/sqldemo:latest",
+                "restart": "always",
+                "ports": [
+                  "1433:1433"
+                ]
+              }
             }
           }
         }
-      ]
-    },
-    {
-      "name": "[variables('appServer-PIPName')]",
-      "type": "Microsoft.Network/publicIPAddresses",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2016-03-30",
-      "dependsOn": [ ],
-      "tags": {
-        "displayName": "appServer-PIP"
       },
-      "properties": {
-        "publicIPAllocationMethod": "Dynamic",
-        "dnsSettings": {
-          "domainNameLabel": "[parameters('appServer-PIPDnsName')]"
+
+      {
+        "name": "[variables('appServerNicName')]",
+        "type": "Microsoft.Network/networkInterfaces",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2016-03-30",
+        "dependsOn": [
+          "[resourceId('Microsoft.Network/virtualNetworks', variables('VNETName'))]",
+          "[resourceId('Microsoft.Network/publicIPAddresses', variables('appServer-PIPName'))]"
+        ],
+        "tags": {
+          "displayName": "appServerNic"
+        },
+        "properties": {
+          "ipConfigurations": [
+            {
+              "name": "ipconfig1",
+              "properties": {
+                "privateIPAllocationMethod": "Dynamic",
+                "subnet": {
+                  "id": "[variables('appServerSubnetRef')]"
+                },
+                "publicIPAddress": {
+                  "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('appServer-PIPName'))]"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "[variables('appServerName')]",
+        "type": "Microsoft.Compute/virtualMachines",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2017-03-30",
+        "dependsOn": [
+          "[resourceId('Microsoft.Network/networkInterfaces', variables('appServerNicName'))]"
+        ],
+        "tags": {
+          "displayName": "appServer"
+        },
+        "properties": {
+          "hardwareProfile": {
+            "vmSize": "[variables('appServerVmSize')]"
+          },
+          "osProfile": {
+            "computerName": "[variables('appServerName')]",
+            "adminUsername": "[parameters('AdminUsername')]",
+            "adminPassword": "[parameters('AdminPassword')]"
+          },
+          "storageProfile": {
+            "imageReference": {
+              "publisher": "[variables('appServerImagePublisher')]",
+              "offer": "[variables('appServerImageOffer')]",
+              "sku": "[parameters('appServerWindowsOSVersion')]",
+              "version": "latest"
+            },
+            "osDisk": {
+              "caching": "ReadWrite",
+              "createOption": "FromImage"
+            }
+          },
+          "networkProfile": {
+            "networkInterfaces": [
+              {
+                "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('appServerNicName'))]"
+              }
+            ]
+          }
+        }
+ 
+      },
+      {
+        "name": "[variables('appServer-PIPName')]",
+        "type": "Microsoft.Network/publicIPAddresses",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2016-03-30",
+        "dependsOn": [],
+        "tags": {
+          "displayName": "appServer-PIP"
+        },
+        "properties": {
+          "publicIPAllocationMethod": "Dynamic",
+          "dnsSettings": {
+            "domainNameLabel": "[parameters('appServer-PIPDnsName')]"
+          }
+        }
+      },
+      {
+        "name": "[variables('appServicePlanName')]",
+        "type": "Microsoft.Web/serverfarms",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2015-08-01",
+        "sku": {
+          "name": "[variables('appServicePlanSkuName')]"
+        },
+        "dependsOn": [],
+        "tags": {
+          "displayName": "lods002"
+        },
+        "properties": {
+          "name": "[variables('appServicePlanName')]",
+          "numberOfWorkers": 1
+        }
+      },
+      {
+        "name": "[variables('webAppName')]",
+        "type": "Microsoft.Web/sites",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2015-08-01",
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
+        ],
+        "tags": {
+          "[concat('hidden-related:', resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName')))]": "Resource",
+          "displayName": "lods002"
+        },
+        "properties": {
+          "name": "[variables('webAppName')]",
+          "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
         }
       }
-    }
-  ]
-}
+    ]
+  }
