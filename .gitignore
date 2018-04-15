@@ -1,0 +1,3 @@
+#Ignore the bin and publish directories
+/002WebApp/bin
+/002-Publish
