@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+  002webapp:
+    image: 002webapp:dev
+    build:
+      target: base
+    environment:
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+      #- NUGET_FALLBACK_PACKAGES=$container_paths_to_fallback_packages_002webapp$
+    volumes:
+      - D:\lods\002-SQLMigrate\002-VSProjects\002WebApp:/app
+      - C:\Users\tswwc\vsdbg\vs2017u5:/remote_debugger:ro
+#$nuget_volume_mapping_002webapp$
+    entrypoint: tail -f /dev/null
+    labels:
+      com.microsoft.visualstudio.debuggee.program: "dotnet"
+      #com.microsoft.visualstudio.debuggee.arguments: " $debuggee_arguments_probing_paths_002webapp$ bin/Debug/netcoreapp2.0/002WebApp.dll"
+      com.microsoft.visualstudio.debuggee.workingdirectory: "/app"
+      com.microsoft.visualstudio.debuggee.killprogram: "/bin/bash -c \"if PID=$$(pidof -x dotnet); then kill $$PID; fi\""

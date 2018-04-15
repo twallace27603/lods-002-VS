@@ -1,0 +1,11 @@
+services:
+  002webapp:
+    build:
+      context: D:\lods\002-SQLMigrate\002-VSProjects
+      dockerfile: 002WebApp/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    image: 002webapp
+    ports:
+    - target: 80
+version: '3.4'

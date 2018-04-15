@@ -1,0 +1,29 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="jumbotron">
+    <h1>SQL Data Test App</h1>
+    <p class="lead">This application is intended to test connectivity to a SQL database.  If this app successfully connects to a database you will see data below.  Otherwise you will see an error message.</p>
+</div>
+
+<div id="output">
+    Please wait, retrieving data.
+</div>
+
+@section scripts {
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $.get("api/DemoData", function (data) {
+                var result = "<table class='table table-striped'><tr><th>Season</th><th>Champion</th><th>Runner Up</th><th>Score</th></tr>"
+                $(data).each(function (index, CLFinal) {
+                    result += "<tr><td>" + CLFinal.Season + "</td><td>" + CLFinal.Winner + "</td><td>" + CLFinal.SecondPlace + "</td><td>" + CLFinal.Score + "</td></tr>"
+                });
+                result += "</table>";
+                $("#output").html(result);
+            }).fail(function (xhr,textStatus,errorThrown) {
+                $('#output').html("<p class='bg-danger'>Error retrieving data: " + errorThrown + "</p>");
+            });
+        });
+    </script>
+    }

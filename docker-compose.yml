@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  002webapp:
+    image: ${DOCKER_REGISTRY}002webapp
+    build:
+      context: .
+      dockerfile: 002WebApp/Dockerfile
